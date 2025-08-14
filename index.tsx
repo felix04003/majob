@@ -1,0 +1,1 @@
+Contenu de la page d'accueil React/Next.js
