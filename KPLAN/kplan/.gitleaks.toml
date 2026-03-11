@@ -1,0 +1,9 @@
+title = "KPLAN gitleaks config"
+
+[allowlist]
+description = "Ignore placeholder values in env.example and test fixtures"
+paths = [
+  '''env\.example''',
+  '''tests/''',
+  '''__tests__/''',
+]
