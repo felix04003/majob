@@ -1,6 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
 // ---------------------------------------------------------------------------
+// Mock supabaseServer (session cookie)
+// ---------------------------------------------------------------------------
+let mockGetUser: { data: { user: unknown }; error: unknown } = {
+  data: { user: null },
+  error: null,
+}
+
+vi.mock("@/lib/supabase/server", () => ({
+  supabaseServer: () =>
+    Promise.resolve({
+      auth: { getUser: vi.fn(() => Promise.resolve(mockGetUser)) },
+    }),
+}))
+
+// ---------------------------------------------------------------------------
 // Mock supabaseAdmin
 // ---------------------------------------------------------------------------
 let accessResult: { data: unknown; error: unknown } = { data: null, error: null }
@@ -27,61 +42,53 @@ vi.mock("@/lib/supabase/admin", () => ({
 
 const { GET } = await import("@/app/api/client/event/route")
 
+const EVENT_ID = "550e8400-e29b-41d4-a716-446655440000"
+
 describe("GET /api/client/event", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockGetUser = { data: { user: null }, error: null }
     accessResult = { data: null, error: null }
     eventResult = { data: null, error: null }
   })
 
-  it("returns 400 for missing token", async () => {
+  it("returns 400 for missing eventId", async () => {
     const req = new Request("http://localhost/api/client/event")
     const res = await GET(req)
     expect(res.status).toBe(400)
   })
 
-  it("returns 400 for short token", async () => {
-    const req = new Request("http://localhost/api/client/event?token=abc")
-    const res = await GET(req)
-    expect(res.status).toBe(400)
-  })
-
-  it("returns 401 for invalid token", async () => {
-    accessResult = { data: null, error: { message: "not found" } }
-    const req = new Request(
-      "http://localhost/api/client/event?token=invalid-token-123456"
-    )
+  it("returns 401 when no authenticated session", async () => {
+    const req = new Request(`http://localhost/api/client/event?eventId=${EVENT_ID}`)
     const res = await GET(req)
     expect(res.status).toBe(401)
   })
 
-  it("returns 401 for expired token", async () => {
-    accessResult = {
-      data: {
-        event_id: "e1",
-        expires_at: new Date(Date.now() - 86400_000).toISOString(), // yesterday
-      },
+  it("returns 403 for session with no client_access row", async () => {
+    mockGetUser = {
+      data: { user: { id: "user-abc", email: "client@test.com" } },
       error: null,
     }
-    const req = new Request(
-      "http://localhost/api/client/event?token=expired-token-123456"
-    )
+    accessResult = { data: null, error: { code: "PGRST116", message: "no rows" } }
+    const req = new Request(`http://localhost/api/client/event?eventId=${EVENT_ID}`)
     const res = await GET(req)
-    expect(res.status).toBe(401)
+    expect(res.status).toBe(403)
   })
 
-  it("returns 200 with event for valid token", async () => {
+  it("returns 200 with event for valid session with active access", async () => {
+    mockGetUser = {
+      data: { user: { id: "user-abc", email: "client@test.com" } },
+      error: null,
+    }
     accessResult = {
-      data: { event_id: "e1", expires_at: null },
+      data: { event_id: EVENT_ID, is_revoked: false },
       error: null,
     }
     eventResult = {
-      data: { id: "e1", title: "Mariage Test", status: "draft" },
+      data: { id: EVENT_ID, title: "Mariage Test", status: "draft" },
       error: null,
     }
-    const req = new Request(
-      "http://localhost/api/client/event?token=valid-client-token-1234"
-    )
+    const req = new Request(`http://localhost/api/client/event?eventId=${EVENT_ID}`)
     const res = await GET(req)
     expect(res.status).toBe(200)
     const body = await res.json()

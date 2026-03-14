@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { supabaseAdmin } from "@/lib/supabase/admin"
-import { requireClientAccess } from "@/lib/server/client"
+import { requireClientSession } from "@/lib/server/client"
 
 const Body = z.object({
-  clientToken: z.string().min(10),
+  eventId: z.string().uuid(),
   action: z.enum(["create", "update", "delete"]),
   guestId: z.string().uuid().optional(),
   payload: z.record(z.string(), z.unknown()).optional(),
@@ -15,10 +15,10 @@ export async function POST(req: Request) {
   const parsed = Body.safeParse(json)
   if (!parsed.success) return NextResponse.json({ error: "Invalid body" }, { status: 400 })
 
-  const { clientToken, action, guestId, payload } = parsed.data
+  const { eventId, action, guestId, payload } = parsed.data
   if (action !== "create" && !guestId) return NextResponse.json({ error: "Missing guestId" }, { status: 400 })
 
-  const gate = await requireClientAccess(clientToken)
+  const gate = await requireClientSession(eventId)
   if (!gate.ok) return gate.response
 
   const db = supabaseAdmin()
@@ -47,5 +47,3 @@ export async function POST(req: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ change })
 }
-
-

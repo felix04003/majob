@@ -2,6 +2,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { createRequest } from "./__helpers"
 
 // ---------------------------------------------------------------------------
+// Mock supabaseServer (session cookie)
+// ---------------------------------------------------------------------------
+let mockGetUser: { data: { user: unknown }; error: unknown } = {
+  data: { user: null },
+  error: null,
+}
+
+vi.mock("@/lib/supabase/server", () => ({
+  supabaseServer: () =>
+    Promise.resolve({
+      auth: { getUser: vi.fn(() => Promise.resolve(mockGetUser)) },
+    }),
+}))
+
+// ---------------------------------------------------------------------------
 // Mock supabaseAdmin
 // ---------------------------------------------------------------------------
 let accessResult: { data: unknown; error: unknown } = { data: null, error: null }
@@ -31,9 +46,12 @@ vi.mock("@/lib/supabase/admin", () => ({
 
 const { POST } = await import("@/app/api/client/guest-change/route")
 
+const EVENT_ID = "550e8400-e29b-41d4-a716-446655440000"
+
 describe("POST /api/client/guest-change", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockGetUser = { data: { user: null }, error: null }
     accessResult = { data: null, error: null }
     guestResult = { data: null, error: null }
     insertResult = { data: null, error: null }
@@ -50,7 +68,7 @@ describe("POST /api/client/guest-change", () => {
   it("returns 400 for update without guestId", async () => {
     const req = createRequest("http://localhost/api/client/guest-change", {
       json: {
-        clientToken: "valid-client-token-123",
+        eventId: EVENT_ID,
         action: "update",
         // no guestId
       },
@@ -59,11 +77,10 @@ describe("POST /api/client/guest-change", () => {
     expect(res.status).toBe(400)
   })
 
-  it("returns 401 for invalid clientToken", async () => {
-    accessResult = { data: null, error: { message: "not found" } }
+  it("returns 401 for missing session", async () => {
     const req = createRequest("http://localhost/api/client/guest-change", {
       json: {
-        clientToken: "bad-token-1234567890",
+        eventId: EVENT_ID,
         action: "create",
         payload: { first_name: "Test", last_name: "User" },
       },
@@ -73,14 +90,18 @@ describe("POST /api/client/guest-change", () => {
   })
 
   it("returns 200 for valid create request", async () => {
+    mockGetUser = {
+      data: { user: { id: "user-abc", email: "client@test.com" } },
+      error: null,
+    }
     accessResult = {
-      data: { event_id: "e1", expires_at: null },
+      data: { event_id: EVENT_ID, is_revoked: false },
       error: null,
     }
     insertResult = {
       data: {
         id: "gc1",
-        event_id: "e1",
+        event_id: EVENT_ID,
         action: "create",
         status: "pending",
       },
@@ -88,7 +109,7 @@ describe("POST /api/client/guest-change", () => {
     }
     const req = createRequest("http://localhost/api/client/guest-change", {
       json: {
-        clientToken: "valid-client-token-123",
+        eventId: EVENT_ID,
         action: "create",
         payload: { first_name: "Marie", last_name: "Dupont" },
       },

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { supabaseAdmin } from "@/lib/supabase/admin"
 import { createNotification } from "@/lib/notifications/create-notification"
-import { requireClientAccess } from "@/lib/server/client"
+import { requireClientSession } from "@/lib/server/client"
 
 const BodySchema = z.object({
   approved: z.boolean(),
@@ -14,8 +14,9 @@ export async function POST(
   context: { params: Promise<{ taskId: string }> },
 ) {
   const { taskId } = await context.params
-  const token = new URL(req.url).searchParams.get("token") ?? ""
-  const gate = await requireClientAccess(token)
+  const eventId = new URL(req.url).searchParams.get("eventId") ?? ""
+  if (!eventId) return NextResponse.json({ error: "Missing eventId" }, { status: 400 })
+  const gate = await requireClientSession(eventId)
   if (!gate.ok) return gate.response
 
   const body = await req.json().catch(() => null)
