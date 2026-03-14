@@ -25,9 +25,12 @@ create table if not exists client_access (
   email text,
   is_revoked boolean not null default false,
   invited_at timestamptz not null default now(),
-  created_at timestamptz not null default now(),
-  unique(user_id, event_id)
+  created_at timestamptz not null default now()
 );
+-- Partial unique index: allows multiple NULL user_id rows (pending invitations)
+create unique index if not exists client_access_user_event_idx
+  on client_access(user_id, event_id)
+  where user_id is not null;
 create index if not exists client_access_user_id_idx on client_access(user_id);
 
 -- GUESTS (liste officielle)
