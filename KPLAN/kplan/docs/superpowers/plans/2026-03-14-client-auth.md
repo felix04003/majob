@@ -2058,3 +2058,1247 @@ After all tasks are complete, verify these flows manually:
 - [ ] Client uses forgot-password → receives email → resets password → can log in
 - [ ] Planner can revoke client access → client session still works but API calls to that event return 403
 - [ ] Planner can re-invite a previously revoked client
+
+---
+
+## Chunk 4: Liquid Glass UI Design System
+
+> **Context:** Tailwind CSS v4 project (`@import "tailwindcss"`, no `tailwind.config.ts`). Tokens go in `globals.css` via `@theme`. Dancing Script already loaded as `--font-handwriting`. Route groups: landing → `app/(public)/page.tsx`, login → `app/(auth)/login/login-client.tsx`, dashboard → `app/(planner)/dashboard/page.tsx`.
+
+### File Map — Liquid Glass
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `app/globals.css` | Modify | Add Kplan design tokens, glass vars, animations |
+| `app/layout.tsx` | Modify | Add `--font-dancing` alias, ambient orbs, dark-mode body gradient |
+| `components/ui/glass-card.tsx` | Create | Reusable glass card (variants: default/strong/subtle/gold/danger) |
+| `components/ui/kplan-button.tsx` | Create | Button with gold/glass/ghost-gold/danger variants |
+| `components/ambient-background.tsx` | Create | 3 animated orbs + noise overlay |
+| `components/ui/status-badge.tsx` | Create | Event status badges (active/jour-j/completed/pending) |
+| `components/ui/skeleton-glass.tsx` | Create | Shimmer skeleton for loading states |
+| `components/ui/gallery.tsx` | Create | PhotoGallery with framer-motion drag photos |
+| `app/(auth)/login/login-client.tsx` | Modify | Full Liquid Glass transform |
+| `app/(public)/page.tsx` | Modify | Deep-space hero, glass cards, PhotoGallery, stat counters |
+| `components/planner-navbar.tsx` | Modify | Sticky glass navbar |
+| `app/(planner)/dashboard/page.tsx` | Modify | KPI cards, event list with glass styling |
+
+---
+
+### Task 12: Design Tokens — `globals.css`
+
+**Files:**
+- Modify: `app/globals.css`
+
+> Note: Tailwind v4 uses `@theme inline {}` for custom tokens (generates CSS classes like `text-kplan-gold`). Global CSS vars go in `:root`. Animations go in `@keyframes` blocks.
+
+- [ ] **Step 1: Add Kplan brand tokens and glass vars to `globals.css`**
+
+Append the following **before** the existing `@layer base` block:
+
+```css
+/* ─── Kplan Design Tokens ──────────────────────────────────────────────── */
+:root {
+  /* Brand palette */
+  --kplan-gold:      #C9A96E;
+  --kplan-rose:      #E8A0A0;
+  --kplan-sage:      #8FAF8F;
+  --kplan-midnight:  #0A0C1A;
+  --kplan-navy:      #0D1240;
+
+  /* Glass system */
+  --glass-bg:          rgba(255,255,255,0.10);
+  --glass-bg-strong:   rgba(255,255,255,0.18);
+  --glass-border:      rgba(255,255,255,0.18);
+  --glass-border-top:  rgba(255,255,255,0.35);
+  --glass-shadow:      0 8px 32px rgba(0,0,0,0.20), 0 1px 0 rgba(255,255,255,0.10) inset;
+
+  /* Text hierarchy */
+  --text-1: rgba(255,255,255,0.95);
+  --text-2: rgba(255,255,255,0.65);
+  --text-3: rgba(255,255,255,0.40);
+
+  /* Easing */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Border radius */
+  --r-sm:   12px;
+  --r-md:   18px;
+  --r-lg:   24px;
+  --r-xl:   32px;
+  --r-pill: 100px;
+}
+
+/* ─── Tailwind v4 custom color tokens ─────────────────────────────────── */
+/* Extends @theme so Tailwind generates bg-kplan-gold, text-kplan-gold, etc. */
+@theme inline {
+  --color-kplan-gold:     #C9A96E;
+  --color-kplan-rose:     #E8A0A0;
+  --color-kplan-sage:     #8FAF8F;
+  --color-kplan-midnight: #0A0C1A;
+  --color-kplan-navy:     #0D1240;
+
+  /* Font alias: Dancing Script is loaded as --font-handwriting in layout.tsx */
+  --font-dancing: var(--font-handwriting);
+}
+```
+
+- [ ] **Step 2: Append CSS animations to `globals.css`**
+
+Add at the end of `globals.css`:
+
+```css
+/* ─── Liquid Glass Animations ─────────────────────────────────────────── */
+
+/* Ambient orb float */
+@keyframes float1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(60px,40px) scale(1.1)} }
+@keyframes float2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-40px,60px) scale(0.9)} }
+@keyframes float3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(40px,-30px) scale(1.05)} }
+
+/* Shimmer skeleton */
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.skeleton-glass {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.04) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Error shake */
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+.shake { animation: shake 0.4s ease-in-out; }
+
+/* Gold pulse (Jour J badge) */
+@keyframes gold-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(201,169,110,0.5)} 50%{box-shadow:0 0 0 6px rgba(201,169,110,0)} }
+.animate-gold-pulse { animation: gold-pulse 2s ease-in-out infinite; }
+
+/* Confetti */
+@keyframes confetti-fall { 0%{transform:translateY(-100px) rotate(0deg);opacity:1} 100%{transform:translateY(600px) rotate(720deg);opacity:0} }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  .skeleton-glass { animation: none; background: rgba(255,255,255,0.06); }
+}
+```
+
+- [ ] **Step 3: Verify TypeScript / build (no TypeScript in CSS, just verify Next.js doesn't error)**
+
+```bash
+cd /Users/A.BEYE/KPLAN/kplan && export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH" && npx next build 2>&1 | tail -10
+```
+Expected: Build succeeds (or only pre-existing errors).
+
+- [ ] **Step 4: Commit**
+
+```bash
+git -C /Users/A.BEYE/KPLAN/kplan add app/globals.css
+git -C /Users/A.BEYE/KPLAN/kplan commit -m "feat: add Liquid Glass design tokens and animations to globals.css"
+```
+
+---
+
+### Task 13: Root Layout — Ambient Orbs + Body Gradient
+
+**Files:**
+- Modify: `app/layout.tsx`
+
+- [ ] **Step 1: Update `app/layout.tsx`**
+
+Replace the entire file with:
+
+```tsx
+import type { Metadata, Viewport } from "next"
+import { Geist, Geist_Mono, Dancing_Script } from "next/font/google"
+import "./globals.css"
+import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/sonner"
+import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
+
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] })
+const dancingScript = Dancing_Script({
+  variable: "--font-handwriting",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+})
+
+export const metadata: Metadata = {
+  title: "Kplan",
+  description: "Planner + Client + Invités + Jour J (Next.js + Supabase)",
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="fr" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${dancingScript.variable} antialiased`}
+        style={{ background: "linear-gradient(135deg, #0A0C1A 0%, #0D1240 30%, #1A0A2A 60%, #0A1020 100%)", minHeight: "100dvh" }}
+      >
+        {/* Ambient gradient orbs — fixed behind all content */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed -z-10"
+          style={{ width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(201,169,110,0.25) 0%, transparent 70%)", top: -200, left: -100, filter: "blur(80px)", animation: "float1 18s ease-in-out infinite" }}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed -z-10"
+          style={{ width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(90,200,250,0.18) 0%, transparent 70%)", top: "30%", right: -150, filter: "blur(80px)", animation: "float2 22s ease-in-out infinite" }}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed -z-10"
+          style={{ width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(232,160,160,0.20) 0%, transparent 70%)", bottom: "10%", left: "20%", filter: "blur(80px)", animation: "float3 16s ease-in-out infinite" }}
+        />
+
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
+          {children}
+          <Toaster />
+          <Analytics />
+          <SpeedInsights />
+        </ThemeProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+> **Note:** `defaultTheme="dark"` + `enableSystem={false}` forces dark mode, which is required for the deep-space glass aesthetic. If you need to support light mode, this must be revisited separately.
+
+- [ ] **Step 2: TypeScript check**
+
+```bash
+cd /Users/A.BEYE/KPLAN/kplan && export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH" && npx tsc --noEmit
+```
+Expected: 0 errors.
+
+- [ ] **Step 3: Visual check — screenshot the app**
+
+```bash
+# Server is already running on port 3001 — take a screenshot via preview tool
+# Expected: deep dark background with 3 soft glowing orbs visible
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git -C /Users/A.BEYE/KPLAN/kplan add app/layout.tsx
+git -C /Users/A.BEYE/KPLAN/kplan commit -m "feat: add ambient orbs and dark space background to root layout"
+```
+
+---
+
+### Task 14: Global Glass Components
+
+**Files:**
+- Create: `components/ui/glass-card.tsx`
+- Create: `components/ui/kplan-button.tsx`
+- Create: `components/ui/status-badge.tsx`
+- Create: `components/ui/skeleton-glass.tsx`
+
+- [ ] **Step 1: Create `components/ui/glass-card.tsx`**
+
+```tsx
+import { cn } from "@/lib/utils"
+
+type GlassVariant = "default" | "strong" | "subtle" | "gold" | "danger"
+type GlassPadding = "sm" | "md" | "lg"
+
+interface GlassCardProps {
+  variant?: GlassVariant
+  hover?: boolean
+  padding?: GlassPadding
+  className?: string
+  children: React.ReactNode
+  style?: React.CSSProperties
+}
+
+const variantStyles: Record<GlassVariant, string> = {
+  default: "bg-white/10 border-white/18",
+  strong:  "bg-white/18 border-white/25",
+  subtle:  "bg-white/5  border-white/10",
+  gold:    "bg-[#C9A96E]/10 border-[#C9A96E]/30",
+  danger:  "bg-red-500/5 border-red-500/20",
+}
+
+const paddingStyles: Record<GlassPadding, string> = {
+  sm: "p-3",
+  md: "p-5",
+  lg: "p-7",
+}
+
+export function GlassCard({
+  variant = "default",
+  hover = false,
+  padding = "md",
+  className,
+  children,
+  style,
+}: GlassCardProps) {
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-2xl border backdrop-blur-[24px]",
+        variantStyles[variant],
+        paddingStyles[padding],
+        hover && "transition-transform duration-200 hover:-translate-y-1 hover:scale-[1.01] cursor-pointer",
+        className,
+      )}
+      style={{
+        boxShadow: "var(--glass-shadow)",
+        ...style,
+      }}
+    >
+      {/* Inner top highlight */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
+        style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)" }}
+      />
+      {children}
+    </div>
+  )
+}
+```
+
+- [ ] **Step 2: Create `components/ui/kplan-button.tsx`**
+
+```tsx
+import { cn } from "@/lib/utils"
+import { ButtonHTMLAttributes, forwardRef } from "react"
+
+type KplanVariant = "gold" | "glass" | "ghost-gold" | "danger"
+
+interface KplanButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: KplanVariant
+  size?: "sm" | "md" | "lg"
+  loading?: boolean
+}
+
+const variantStyles: Record<KplanVariant, string> = {
+  gold:        "text-[#0A0C1A] font-semibold border-0",
+  glass:       "text-white/90 border border-white/20 bg-white/10 hover:bg-white/15 backdrop-blur-[24px]",
+  "ghost-gold": "text-[#C9A96E] border border-[#C9A96E]/30 bg-transparent hover:bg-[#C9A96E]/10",
+  danger:      "text-red-400 border border-red-500/30 bg-red-500/10 hover:bg-red-500/20",
+}
+
+const sizeStyles = { sm: "h-9 px-4 text-sm", md: "h-11 px-6 text-sm", lg: "h-14 px-8 text-base" }
+
+export const KplanButton = forwardRef<HTMLButtonElement, KplanButtonProps>(
+  ({ variant = "gold", size = "md", loading, disabled, className, children, style, ...props }, ref) => {
+    const isGold = variant === "gold"
+    return (
+      <button
+        ref={ref}
+        disabled={disabled || loading}
+        className={cn(
+          "relative inline-flex items-center justify-center rounded-[100px] font-medium transition-all duration-150",
+          "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[rgba(201,169,110,0.4)]",
+          "disabled:opacity-50 disabled:cursor-not-allowed",
+          "active:scale-[0.97]",
+          sizeStyles[size],
+          variantStyles[variant],
+          !disabled && !loading && "hover:scale-[1.02] hover:-translate-y-px",
+          className,
+        )}
+        style={{
+          ...(isGold ? { background: "linear-gradient(135deg, #C9A96E, #E8A0A0)" } : {}),
+          minHeight: 44, // Apple HIG touch target
+          ...style,
+        }}
+        {...props}
+      >
+        {loading ? (
+          <span className="flex items-center gap-2">
+            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+            {children}
+          </span>
+        ) : children}
+      </button>
+    )
+  }
+)
+KplanButton.displayName = "KplanButton"
+```
+
+- [ ] **Step 3: Create `components/ui/status-badge.tsx`**
+
+```tsx
+import { cn } from "@/lib/utils"
+
+type EventStatus = "active" | "jour-j" | "completed" | "pending" | "cancelled"
+
+const config: Record<EventStatus, { label: string; classes: string; pulse?: boolean }> = {
+  active:    { label: "En cours",  classes: "bg-blue-500/15 text-blue-300 border-blue-500/30" },
+  "jour-j":  { label: "Jour J",    classes: "bg-[#C9A96E]/15 text-[#C9A96E] border-[#C9A96E]/30", pulse: true },
+  completed: { label: "Terminé",   classes: "bg-green-500/15 text-green-300 border-green-500/30" },
+  pending:   { label: "En attente",classes: "bg-white/8 text-white/50 border-white/15" },
+  cancelled: { label: "Annulé",    classes: "bg-red-500/15 text-red-300 border-red-500/30" },
+}
+
+export function StatusBadge({ status, className }: { status: EventStatus; className?: string }) {
+  const { label, classes, pulse } = config[status]
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium", classes, className)}>
+      <span
+        className={cn("h-1.5 w-1.5 rounded-full bg-current", pulse && "animate-gold-pulse")}
+      />
+      {label}
+    </span>
+  )
+}
+```
+
+- [ ] **Step 4: Create `components/ui/skeleton-glass.tsx`**
+
+```tsx
+import { cn } from "@/lib/utils"
+
+export function SkeletonGlass({ className }: { className?: string }) {
+  return <div className={cn("skeleton-glass rounded-xl", className)} aria-hidden />
+}
+
+export function SkeletonCard() {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-[24px]">
+      <SkeletonGlass className="mb-3 h-4 w-1/3" />
+      <SkeletonGlass className="mb-2 h-8 w-1/2" />
+      <SkeletonGlass className="h-3 w-2/3" />
+    </div>
+  )
+}
+```
+
+- [ ] **Step 5: TypeScript check**
+
+```bash
+cd /Users/A.BEYE/KPLAN/kplan && export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH" && npx tsc --noEmit
+```
+Expected: 0 errors.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git -C /Users/A.BEYE/KPLAN/kplan add components/ui/glass-card.tsx components/ui/kplan-button.tsx components/ui/status-badge.tsx components/ui/skeleton-glass.tsx
+git -C /Users/A.BEYE/KPLAN/kplan commit -m "feat: add global Liquid Glass components (GlassCard, KplanButton, StatusBadge, SkeletonGlass)"
+```
+
+---
+
+### Task 15: PhotoGallery Component + Install framer-motion
+
+**Files:**
+- Create: `components/ui/gallery.tsx`
+
+- [ ] **Step 1: Install framer-motion**
+
+```bash
+cd /Users/A.BEYE/KPLAN/kplan && export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH" && npm install framer-motion
+```
+Expected: Package installed, no peer-dep errors.
+
+- [ ] **Step 2: Create `components/ui/gallery.tsx`**
+
+Create the file exactly as provided in the spec (`kplan-liquid-glass-prompt.md`, section "File to create: `components/ui/gallery.tsx`").
+
+Key adaptations from the prompt:
+- `var(--font-dancing)` — works because we aliased it to `var(--font-handwriting)` in Step 12
+- Keep all 5 Pexels photo URLs as-is
+- The `Button` import uses shadcn's `@/components/ui/button`
+
+```tsx
+"use client"
+import { Ref, forwardRef, useState, useEffect } from "react"
+import Image, { ImageProps } from "next/image"
+import Link from "next/link"
+import { motion, useMotionValue } from "framer-motion"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+
+export const PhotoGallery = ({ animationDelay = 0.5 }: { animationDelay?: number }) => {
+  const [isVisible, setIsVisible] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+    return () => window.removeEventListener("resize", checkMobile)
+  }, [])
+
+  useEffect(() => {
+    const v = setTimeout(() => setIsVisible(true), animationDelay * 1000)
+    const a = setTimeout(() => setIsLoaded(true), (animationDelay + 0.4) * 1000)
+    return () => { clearTimeout(v); clearTimeout(a) }
+  }, [animationDelay])
+
+  const containerVariants = {
+    hidden:  { opacity: 1 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.15, delayChildren: 0.1 } },
+  }
+
+  const photoVariants = {
+    hidden:  () => ({ x: 0, y: 0, rotate: 0, scale: 1 }),
+    visible: (c: { x: string; y: string; order: number }) => ({
+      x: c.x, y: c.y, rotate: 0, scale: 1,
+      transition: { type: "spring", stiffness: 70, damping: 12, mass: 1, delay: c.order * 0.15 },
+    }),
+  }
+
+  const allPhotos = [
+    { id: 1, order: 0, x: "-320px", y: "15px",  xMobile: "-160px", yMobile: "8px",  zIndex: 50, direction: "left"  as const, src: "https://images.pexels.com/photos/32025694/pexels-photo-32025694/free-photo-of-romantic-wedding-in-ancient-ruins.jpeg" },
+    { id: 2, order: 1, x: "-160px", y: "32px",  xMobile: "0px",    yMobile: "16px", zIndex: 40, direction: "left"  as const, src: "https://images.pexels.com/photos/31596551/pexels-photo-31596551/free-photo-of-winter-scene-with-lake-view-in-van-turkiye.jpeg" },
+    { id: 3, order: 2, x: "0px",    y: "8px",   xMobile: "160px",  yMobile: "24px", zIndex: 30, direction: "right" as const, src: "https://images.pexels.com/photos/31890053/pexels-photo-31890053/free-photo-of-moody-portrait-with-heart-shaped-light.jpeg" },
+    { id: 4, order: 3, x: "160px",  y: "22px",  xMobile: "160px",  yMobile: "22px", zIndex: 20, direction: "right" as const, src: "https://images.pexels.com/photos/19936068/pexels-photo-19936068/free-photo-of-women-sitting-on-hilltop-with-clouds-below.jpeg" },
+    { id: 5, order: 4, x: "320px",  y: "44px",  xMobile: "320px",  yMobile: "44px", zIndex: 10, direction: "left"  as const, src: "https://images.pexels.com/photos/20494995/pexels-photo-20494995/free-photo-of-head-of-peacock.jpeg" },
+  ]
+  const photos = isMobile ? allPhotos.slice(0, 3) : allPhotos
+  const photoSize = isMobile ? 160 : 220
+
+  return (
+    <div
+      className="mt-40 relative rounded-3xl px-4 py-8"
+      style={{ backdropFilter: "blur(24px) saturate(180%)", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+    >
+      {/* Background grid accent */}
+      <div className="absolute inset-0 max-md:hidden top-[200px] -z-10 h-[300px] w-full bg-[linear-gradient(to_right,#C9A96E_1px,transparent_1px),linear-gradient(to_bottom,#C9A96E_1px,transparent_1px)] bg-[size:3rem_3rem] opacity-10 [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
+
+      <p className="lg:text-md my-2 text-center text-xs font-light uppercase tracking-widest text-kplan-gold">
+        Événements organisés avec Kplan
+      </p>
+      <h3
+        className="z-20 mx-auto max-w-2xl justify-center bg-clip-text py-3 text-center text-4xl text-transparent md:text-6xl"
+        style={{ backgroundImage: "linear-gradient(160deg, #ffffff 0%, #C9A96E 50%, #E8A0A0 100%)" }}
+      >
+        Nos <span style={{ fontFamily: "var(--font-dancing)", fontStyle: "italic" }}>événements</span>
+      </h3>
+
+      <div className="relative mb-8 h-[350px] w-full items-center justify-center lg:flex">
+        <motion.div
+          className="relative mx-auto flex w-full max-w-7xl justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isVisible ? 1 : 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+          <motion.div
+            className="relative flex w-full justify-center"
+            variants={containerVariants}
+            initial="hidden"
+            animate={isLoaded ? "visible" : "hidden"}
+          >
+            <div className="relative" style={{ height: photoSize, width: photoSize }}>
+              {[...photos].reverse().map((photo) => (
+                <motion.div
+                  key={photo.id}
+                  className="absolute left-0 top-0"
+                  style={{ zIndex: photo.zIndex }}
+                  variants={photoVariants}
+                  custom={{ x: isMobile ? photo.xMobile : photo.x, y: isMobile ? photo.yMobile : photo.y, order: photo.order }}
+                >
+                  <Photo width={photoSize} height={photoSize} src={photo.src} alt="Événement organisé par Kplan" direction={photo.direction} />
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
+
+      <div className="flex w-full justify-center">
+        <Link href="/references">
+          <Button
+            className="rounded-full px-8 py-6 text-sm font-medium border-0"
+            style={{ background: "linear-gradient(135deg, #C9A96E, #E8A0A0)", color: "#0A0C1A", minHeight: 44 }}
+          >
+            Voir tous nos événements →
+          </Button>
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+function getRandomNumberInRange(min: number, max: number): number {
+  if (min >= max) throw new Error("Min value should be less than max value")
+  return Math.random() * (max - min) + min
+}
+
+const MotionImage = motion(forwardRef(function MotionImage(props: ImageProps, ref: Ref<HTMLImageElement>) {
+  return <Image ref={ref} {...props} />
+}))
+
+type Direction = "left" | "right"
+
+export const Photo = ({ src, alt, className, direction, width, height }: {
+  src: string; alt: string; className?: string; direction?: Direction; width: number; height: number
+}) => {
+  const [rotation, setRotation] = useState(0)
+  const x = useMotionValue(200)
+  const y = useMotionValue(200)
+
+  useEffect(() => { setRotation(getRandomNumberInRange(1, 4) * (direction === "left" ? -1 : 1)) }, [direction])
+
+  return (
+    <motion.div
+      drag dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+      whileTap={{ scale: 1.2, zIndex: 9999 }}
+      whileHover={{ scale: 1.1, rotateZ: 2 * (direction === "left" ? -1 : 1), zIndex: 9999 }}
+      whileDrag={{ scale: 1.1, zIndex: 9999 }}
+      initial={{ rotate: 0 }} animate={{ rotate: rotation }}
+      style={{ width, height, perspective: 400, zIndex: 1, WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none", touchAction: "none" }}
+      className={cn(className, "relative mx-auto shrink-0 cursor-grab active:cursor-grabbing")}
+      onMouseMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); x.set(e.clientX - r.left); y.set(e.clientY - r.top) }}
+      onMouseLeave={() => { x.set(200); y.set(200) }}
+      draggable={false} tabIndex={0}
+    >
+      <div className="relative h-full w-full overflow-hidden rounded-3xl" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)" }}>
+        <MotionImage className="rounded-3xl object-cover" fill src={src} alt={alt} draggable={false} />
+        <div className="absolute inset-0 rounded-3xl pointer-events-none" style={{ background: "linear-gradient(160deg, rgba(255,255,255,0.08) 0%, transparent 60%)" }} />
+      </div>
+    </motion.div>
+  )
+}
+```
+
+- [ ] **Step 3: TypeScript check**
+
+```bash
+cd /Users/A.BEYE/KPLAN/kplan && export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH" && npx tsc --noEmit
+```
+Expected: 0 errors.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git -C /Users/A.BEYE/KPLAN/kplan add components/ui/gallery.tsx package.json package-lock.json
+git -C /Users/A.BEYE/KPLAN/kplan commit -m "feat: add PhotoGallery component with framer-motion drag photos"
+```
+
+---
+
+### Task 16: Transform Login Page
+
+**Files:**
+- Modify: `app/(auth)/login/login-client.tsx`
+
+- [ ] **Step 1: Replace `login-client.tsx` with Liquid Glass version**
+
+```tsx
+"use client"
+
+import { useMemo, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
+import { supabaseBrowser } from "@/lib/supabase/browser"
+import { Input } from "@/components/ui/input"
+import { GlassCard } from "@/components/ui/glass-card"
+import { KplanButton } from "@/components/ui/kplan-button"
+
+type Tab = "planner" | "client"
+
+export default function LoginClient() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const next = searchParams.get("next") || "/dashboard"
+
+  const [activeTab, setActiveTab] = useState<Tab>("planner")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [shake, setShake] = useState(false)
+
+  const canSubmit = useMemo(() => email.includes("@") && password.length >= 8, [email, password])
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    const supabase = supabaseBrowser()
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+
+    setLoading(false)
+    if (error) {
+      const msg = error.message.includes("Invalid login credentials")
+        ? "Email ou mot de passe incorrect"
+        : error.message.includes("Too many requests")
+        ? "Trop de tentatives. Veuillez patienter"
+        : error.message
+      setError(msg)
+      setShake(true)
+      setTimeout(() => setShake(false), 500)
+      return
+    }
+
+    await new Promise((r) => setTimeout(r, 100))
+    router.replace(next)
+    router.refresh()
+  }
+
+  return (
+    <main className="flex min-h-dvh items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        {/* Logo mark */}
+        <div className="mb-8 text-center">
+          <span
+            className="text-5xl font-bold"
+            style={{ fontFamily: "var(--font-dancing)", background: "linear-gradient(135deg, #C9A96E, #E8A0A0)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+          >
+            K
+          </span>
+          <p className="mt-2 text-sm uppercase tracking-widest text-white/40">Kplan</p>
+        </div>
+
+        {/* Glass tab switcher */}
+        <div
+          className="mb-4 flex rounded-full p-1"
+          style={{ backdropFilter: "blur(12px) saturate(160%)", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)" }}
+          role="tablist"
+          aria-label="Type de connexion"
+        >
+          {(["planner", "client"] as Tab[]).map((tab) => {
+            const isActive = activeTab === tab
+            return (
+              <button
+                key={tab}
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => { setActiveTab(tab); setError(null) }}
+                className="flex-1 rounded-full py-2 text-sm font-medium transition-all duration-200"
+                style={{
+                  minHeight: 44,
+                  background: isActive ? "linear-gradient(135deg, #C9A96E, #E8A0A0)" : "transparent",
+                  color: isActive ? "#0A0C1A" : "rgba(255,255,255,0.50)",
+                  fontWeight: isActive ? 600 : 400,
+                }}
+              >
+                {tab === "planner" ? "Connexion Planner" : "Accès Client"}
+              </button>
+            )
+          })}
+        </div>
+
+        {activeTab === "planner" ? (
+          <GlassCard className={shake ? "shake" : ""}>
+            <h1 className="mb-6 text-xl font-semibold text-white/95">Connexion Planner</h1>
+
+            <form className="flex flex-col gap-4" onSubmit={onSubmit}>
+              <div>
+                <label htmlFor="email" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-white/40">
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  inputMode="email"
+                  required
+                  className="border-white/12 bg-white/8 text-white placeholder:text-white/30 focus-visible:ring-[rgba(201,169,110,0.35)]"
+                  style={{ borderColor: error ? "rgba(239,68,68,0.5)" : undefined }}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-white/40">
+                  Mot de passe
+                </label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                  className="border-white/12 bg-white/8 text-white placeholder:text-white/30 focus-visible:ring-[rgba(201,169,110,0.35)]"
+                  style={{ borderColor: error ? "rgba(239,68,68,0.5)" : undefined }}
+                />
+              </div>
+
+              {error && (
+                <p role="alert" className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                  {error}
+                </p>
+              )}
+
+              <KplanButton type="submit" disabled={!canSubmit} loading={loading} className="mt-2 w-full">
+                Se connecter
+              </KplanButton>
+            </form>
+
+            <div className="mt-5 text-center">
+              <Link href="/forgot-password" className="text-sm text-white/40 transition-colors hover:text-kplan-gold">
+                Mot de passe oublié ?
+              </Link>
+            </div>
+          </GlassCard>
+        ) : (
+          <GlassCard>
+            <h1 className="mb-4 text-xl font-semibold text-white/95">Accès Client</h1>
+            <p className="mb-6 text-sm text-white/50">
+              Votre planner vous a envoyé un lien d&apos;invitation par email. Connectez-vous via ce lien ou accédez à votre espace ci-dessous.
+            </p>
+            <Link href="/client/login">
+              <KplanButton variant="glass" className="w-full">
+                Accéder à mon espace client →
+              </KplanButton>
+            </Link>
+          </GlassCard>
+        )}
+      </div>
+    </main>
+  )
+}
+```
+
+- [ ] **Step 2: TypeScript check**
+
+```bash
+cd /Users/A.BEYE/KPLAN/kplan && export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH" && npx tsc --noEmit
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git -C /Users/A.BEYE/KPLAN/kplan add "app/(auth)/login/login-client.tsx"
+git -C /Users/A.BEYE/KPLAN/kplan commit -m "feat: liquid glass transform for planner login page"
+```
+
+---
+
+### Task 17: Transform Landing Page + PhotoGallery
+
+**Files:**
+- Modify: `app/(public)/page.tsx`
+
+- [ ] **Step 1: Replace `app/(public)/page.tsx` with Liquid Glass version**
+
+```tsx
+"use client"
+
+import Link from "next/link"
+import { useEffect, useRef, useState } from "react"
+import { CalendarDays, Users, QrCode, LayoutGrid, Bell, ClipboardCheck, ArrowRight, CheckCircle2 } from "lucide-react"
+import { GlassCard } from "@/components/ui/glass-card"
+import { KplanButton } from "@/components/ui/kplan-button"
+import { PhotoGallery } from "@/components/ui/gallery"
+
+const features = [
+  { icon: CalendarDays, title: "Gestion d'événements", description: "Créez et gérez vos événements de A à Z. Timeline, budget, prestataires — tout au même endroit." },
+  { icon: Users,        title: "Portail client collaboratif", description: "Vos clients proposent des invités et modifications, validées par vous sous 4h via un SLA intégré." },
+  { icon: LayoutGrid,   title: "Plan de table interactif", description: "Placez vos invités par glisser-déposer sur mobile ou desktop. Visualisez en 3D avant le jour J." },
+  { icon: QrCode,       title: "Check-in Jour J", description: "Scannez les QR codes des invités à l'entrée. Dashboard temps réel des arrivées." },
+  { icon: Bell,         title: "Notifications temps réel", description: "Soyez alerté instantanément des nouvelles demandes et rappels grâce à Supabase Realtime." },
+  { icon: ClipboardCheck, title: "Checklist Jour J", description: "Liste de tâches chronologique avec assignation par équipier. Suivi en direct." },
+]
+
+const steps = [
+  { step: "01", title: "Créez votre événement", description: "Définissez la date, le lieu, le budget et les détails en quelques clics." },
+  { step: "02", title: "Invitez et collaborez",  description: "Partagez un lien client pour que vos clients proposent invités et modifications." },
+  { step: "03", title: "Gérez le Jour J",        description: "Scannez les QR codes, suivez les arrivées et cochez vos tâches depuis votre mobile." },
+]
+
+const stats = [
+  { value: 500,  suffix: "+", label: "événements gérés" },
+  { value: 4,    suffix: "h", label: "SLA garanti" },
+  { value: 98,   suffix: "%", label: "satisfaction client" },
+]
+
+function AnimatedStat({ value, suffix, label }: { value: number; suffix: string; label: string }) {
+  const [count, setCount] = useState(0)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return
+      observer.disconnect()
+      let start = 0
+      const step = value / 40
+      const timer = setInterval(() => {
+        start += step
+        if (start >= value) { setCount(value); clearInterval(timer) }
+        else setCount(Math.floor(start))
+      }, 30)
+    }, { threshold: 0.5 })
+    if (ref.current) observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [value])
+
+  return (
+    <div ref={ref} className="text-center">
+      <div className="text-4xl font-bold md:text-5xl" style={{ background: "linear-gradient(135deg, #ffffff, #C9A96E)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+        {count}{suffix}
+      </div>
+      <div className="mt-1 text-sm text-white/50">{label}</div>
+    </div>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <div className="flex min-h-dvh flex-col">
+      {/* ─── Navbar ─── */}
+      <header className="sticky top-0 z-50 border-b border-white/8 backdrop-blur-[40px]" style={{ background: "rgba(10,12,26,0.7)" }}>
+        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <Link href="/" className="text-xl font-bold tracking-tight text-white">
+            Kplan
+          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/login">
+              <KplanButton variant="ghost-gold" size="sm">Connexion</KplanButton>
+            </Link>
+            <Link href="/login">
+              <KplanButton variant="gold" size="sm">
+                Commencer <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              </KplanButton>
+            </Link>
+          </div>
+        </nav>
+      </header>
+
+      {/* ─── Hero ─── */}
+      <section className="mx-auto flex max-w-4xl flex-col items-center px-6 py-24 text-center md:py-36">
+        <div className="mb-4 inline-flex items-center rounded-full border border-kplan-gold/30 bg-kplan-gold/10 px-4 py-1.5 text-xs font-medium text-kplan-gold">
+          ✦ Gestion d'événements premium
+        </div>
+        <h1
+          className="mb-6 bg-clip-text text-5xl font-extrabold tracking-tight text-transparent md:text-7xl"
+          style={{ backgroundImage: "linear-gradient(160deg, #ffffff 0%, #C9A96E 50%, #E8A0A0 100%)", letterSpacing: "-2px" }}
+        >
+          Organisez sans{" "}
+          <span style={{ fontFamily: "var(--font-dancing)", fontStyle: "italic", color: "#C9A96E", WebkitTextFillColor: "#C9A96E" }}>
+            stress
+          </span>
+        </h1>
+        <p className="mb-10 max-w-2xl text-lg leading-relaxed text-white/65">
+          La plateforme tout-en-un pour les wedding planners et organisateurs d'événements professionnels.
+          Clients, invités, plan de table, Jour J — tout centralisé.
+        </p>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link href="/login">
+            <KplanButton variant="gold" size="lg">
+              Commencer gratuitement <ArrowRight className="ml-2 h-4 w-4" />
+            </KplanButton>
+          </Link>
+          <Link href="/login">
+            <KplanButton variant="glass" size="lg">Voir la démo</KplanButton>
+          </Link>
+        </div>
+      </section>
+
+      {/* ─── Stats ─── */}
+      <section className="mx-auto w-full max-w-3xl px-6 py-12">
+        <GlassCard variant="strong" className="grid grid-cols-3 gap-8 py-8">
+          {stats.map((s) => <AnimatedStat key={s.label} {...s} />)}
+        </GlassCard>
+      </section>
+
+      {/* ─── Features ─── */}
+      <section className="mx-auto max-w-6xl px-6 py-20">
+        <h2 className="mb-12 text-center text-3xl font-bold text-white/95 md:text-4xl">Tout ce dont vous avez besoin</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((f) => (
+            <GlassCard key={f.title} hover className="flex flex-col gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-kplan-gold/15">
+                <f.icon className="h-5 w-5 text-kplan-gold" />
+              </div>
+              <h3 className="font-semibold text-white/95">{f.title}</h3>
+              <p className="text-sm leading-relaxed text-white/55">{f.description}</p>
+            </GlassCard>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── PhotoGallery ─── */}
+      <section className="mx-auto max-w-6xl px-6 py-8">
+        <PhotoGallery animationDelay={0.3} />
+      </section>
+
+      {/* ─── Comment ça marche ─── */}
+      <section className="mx-auto max-w-4xl px-6 py-20">
+        <h2 className="mb-12 text-center text-3xl font-bold text-white/95 md:text-4xl">Comment ça marche</h2>
+        <div className="grid gap-6 md:grid-cols-3">
+          {steps.map((s) => (
+            <GlassCard key={s.step} className="text-center">
+              <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full text-lg font-bold text-[#0A0C1A]" style={{ background: "linear-gradient(135deg, #C9A96E, #E8A0A0)" }}>
+                {s.step}
+              </div>
+              <h3 className="mb-2 font-semibold text-white/95">{s.title}</h3>
+              <p className="text-sm leading-relaxed text-white/55">{s.description}</p>
+            </GlassCard>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── Pourquoi Kplan ─── */}
+      <section className="mx-auto max-w-4xl px-6 py-20">
+        <h2 className="mb-10 text-center text-3xl font-bold text-white/95 md:text-4xl">Pourquoi choisir Kplan</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[
+            "SLA 4h garanti sur les demandes client",
+            "Plan de table 3D avec drag-and-drop",
+            "QR code unique par invité",
+            "Dashboard temps réel le jour J",
+            "Notifications instantanées (Realtime)",
+            "100% responsive, conçu pour mobile",
+            "Collaboration planner-client fluide",
+            "Hébergé sur Supabase, rapide et sécurisé",
+          ].map((item) => (
+            <GlassCard key={item} padding="sm" className="flex items-start gap-3">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-kplan-sage" />
+              <span className="text-sm font-medium text-white/80">{item}</span>
+            </GlassCard>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── CTA ─── */}
+      <section className="py-24">
+        <div className="mx-auto max-w-3xl px-6 text-center">
+          <h2 className="mb-4 text-3xl font-bold text-white/95 md:text-4xl">Prêt à simplifier vos événements ?</h2>
+          <p className="mb-8 text-lg text-white/55">
+            Rejoignez les organisateurs qui gèrent leurs événements avec sérénité grâce à Kplan.
+          </p>
+          <Link href="/login">
+            <KplanButton variant="gold" size="lg">
+              Commencer gratuitement <ArrowRight className="ml-2 h-4 w-4" />
+            </KplanButton>
+          </Link>
+        </div>
+      </section>
+
+      {/* ─── Footer ─── */}
+      <footer className="border-t border-white/8 py-10">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
+          <div className="text-sm text-white/30">&copy; {new Date().getFullYear()} Kplan. Tous droits réservés.</div>
+          <Link href="/login" className="text-sm text-white/30 transition-colors hover:text-white/60">Connexion</Link>
+        </div>
+      </footer>
+    </div>
+  )
+}
+```
+
+> **Note:** This page is now a Client Component (`"use client"`) because of `AnimatedStat` which uses `useEffect`/`useRef`. If SSR is needed, extract `AnimatedStat` + `PhotoGallery` into a separate client component and keep the page as a Server Component.
+
+- [ ] **Step 2: TypeScript check**
+
+```bash
+cd /Users/A.BEYE/KPLAN/kplan && export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH" && npx tsc --noEmit
+```
+Expected: 0 errors.
+
+- [ ] **Step 3: Build check**
+
+```bash
+cd /Users/A.BEYE/KPLAN/kplan && export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH" && npx next build 2>&1 | tail -15
+```
+Expected: Build succeeds.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git -C /Users/A.BEYE/KPLAN/kplan add "app/(public)/page.tsx"
+git -C /Users/A.BEYE/KPLAN/kplan commit -m "feat: liquid glass transform for landing page + PhotoGallery + animated stats"
+```
+
+---
+
+### Task 18: Transform Planner Navbar
+
+**Files:**
+- Modify: `components/planner-navbar.tsx`
+
+- [ ] **Step 1: Update `components/planner-navbar.tsx` with glass styling**
+
+Change the `<nav>` opening tag from:
+```tsx
+<nav className="border-b border-border bg-background">
+```
+To:
+```tsx
+<nav className="sticky top-0 z-50 border-b border-white/8 backdrop-blur-[40px]" style={{ background: "rgba(10,12,26,0.75)" }}>
+```
+
+Change the logo from:
+```tsx
+<span className="text-xl font-bold text-foreground">Kplan</span>
+```
+To:
+```tsx
+<span className="text-xl font-bold" style={{ background: "linear-gradient(135deg, #C9A96E, #ffffff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+  Kplan
+</span>
+```
+
+Update inactive nav link style from plain text to `text-white/55 hover:text-white/90` and active link to `text-kplan-gold font-medium`.
+
+- [ ] **Step 2: TypeScript check + build check**
+
+```bash
+cd /Users/A.BEYE/KPLAN/kplan && export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH" && npx tsc --noEmit
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git -C /Users/A.BEYE/KPLAN/kplan add components/planner-navbar.tsx
+git -C /Users/A.BEYE/KPLAN/kplan commit -m "feat: liquid glass transform for planner navbar"
+```
+
+---
+
+### Task 19: Dashboard Planner — Glass KPI Cards
+
+**Files:**
+- Modify: `app/(planner)/dashboard/page.tsx`
+- Modify or Create: `app/(planner)/dashboard/dashboard-stats.tsx` (existing component)
+
+- [ ] **Step 1: Check current `dashboard-stats.tsx` structure**
+
+```bash
+cat /Users/A.BEYE/KPLAN/kplan/app/\(planner\)/dashboard/dashboard-stats.tsx
+```
+
+- [ ] **Step 2: Wrap existing stats with `GlassCard`**
+
+In `dashboard-stats.tsx`, import `GlassCard` and `SkeletonCard`, then replace each plain `<Card>` with `<GlassCard>`. For loading states, replace plain skeletons with `<SkeletonCard />`.
+
+Pattern to follow (adapt to the actual component structure found in Step 1):
+```tsx
+// Before:
+<Card className="p-4">
+  <CardTitle>Events</CardTitle>
+  <div className="text-3xl font-bold">{count}</div>
+</Card>
+
+// After:
+<GlassCard hover>
+  <p className="text-xs font-medium uppercase tracking-widest text-white/40">Événements actifs</p>
+  <div className="mt-1 text-3xl font-bold text-white/95">{count}</div>
+</GlassCard>
+```
+
+- [ ] **Step 3: Update `app/(planner)/dashboard/page.tsx`** — apply glass heading:
+
+```tsx
+// Add this welcome header above <DashboardStats />:
+<div className="mb-6">
+  <h1 className="text-2xl font-bold text-white/95">
+    Bonjour{" "}
+    <span style={{ fontFamily: "var(--font-dancing)", color: "var(--kplan-gold)", fontSize: "1.5em", lineHeight: 1 }}>
+      Planner
+    </span>{" "}
+    👋
+  </h1>
+  <p className="text-sm text-white/45">
+    {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+  </p>
+</div>
+```
+
+- [ ] **Step 4: TypeScript check**
+
+```bash
+cd /Users/A.BEYE/KPLAN/kplan && export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH" && npx tsc --noEmit
+```
+
+- [ ] **Step 5: Build check**
+
+```bash
+cd /Users/A.BEYE/KPLAN/kplan && export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH" && npx next build 2>&1 | tail -15
+```
+Expected: Build succeeds.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git -C /Users/A.BEYE/KPLAN/kplan add "app/(planner)/dashboard/"
+git -C /Users/A.BEYE/KPLAN/kplan commit -m "feat: liquid glass KPI cards and welcome header on planner dashboard"
+```
+
+---
+
+### Task 20: Glass Transforms — Events List, DayOf, Client Event Pages
+
+**Files:**
+- Modify: `app/(planner)/events/page.tsx` — glass card per event row
+- Modify: `app/(planner)/dayof/[eventId]/dayof-dashboard.tsx` — high-contrast glass for Jour J
+- Modify: `app/client/[eventId]/layout.tsx` *(from Chunk 2, Task 8)* — glass nav already planned
+
+- [ ] **Step 1: Apply `GlassCard` to planner events list**
+
+In `app/(planner)/events/page.tsx`, replace each event's plain card/row with:
+```tsx
+<GlassCard hover key={event.id} className="flex items-center justify-between gap-4">
+  <div>
+    <h3 className="font-semibold text-white/95">{event.title}</h3>
+    <p className="text-sm text-white/45">{/* date */}</p>
+  </div>
+  <StatusBadge status={/* map event status */} />
+</GlassCard>
+```
+
+- [ ] **Step 2: Apply glass to DayOf dashboard**
+
+In `app/(planner)/dayof/[eventId]/dayof-dashboard.tsx`, replace Card imports with GlassCard. Apply stronger contrast (`variant="strong"`) for outdoor readability. Search input: increase to `h-14` (56px touch target). Scan button: use `KplanButton variant="gold"` with camera icon.
+
+- [ ] **Step 3: Apply glass to client event layout (already planned in Task 8, Chunk 2)**
+
+The `app/client/[eventId]/layout.tsx` created in Chunk 2 should already use the glass navbar pattern. If not, update its `<nav>` to match the glass treatment from Task 18.
+
+- [ ] **Step 4: Full TypeScript check**
+
+```bash
+cd /Users/A.BEYE/KPLAN/kplan && export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH" && npx tsc --noEmit
+```
+
+- [ ] **Step 5: Full test suite**
+
+```bash
+cd /Users/A.BEYE/KPLAN/kplan && export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH" && npx vitest run
+```
+Expected: All tests pass (glass components have no logic to test; passing build confirms no TS errors).
+
+- [ ] **Step 6: Final build check**
+
+```bash
+cd /Users/A.BEYE/KPLAN/kplan && export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH" && npx next build 2>&1 | tail -15
+```
+Expected: Build succeeds.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git -C /Users/A.BEYE/KPLAN/kplan add -A
+git -C /Users/A.BEYE/KPLAN/kplan commit -m "feat: apply liquid glass to events list, dayof dashboard, and client event pages"
+```
+
+---
+
+## Manual Visual QA Checklist — Liquid Glass
+
+After Chunk 4 is complete, verify visually (with the dev server on port 3001):
+
+- [ ] Landing page: deep space background visible, 3 animated orbs floating, glass feature cards
+- [ ] Landing page: PhotoGallery loads with fan animation, photos are draggable
+- [ ] Landing page: stat counters animate when scrolled into view
+- [ ] Login page: glass card centered, gold focus ring on inputs, shake on wrong password
+- [ ] Planner navbar: frosted glass effect, Kplan gradient logo
+- [ ] Dashboard: glass KPI cards with shimmer loading state, welcome header with Dancing Script
+- [ ] `prefers-reduced-motion`: all animations disabled (test via Chrome DevTools)
+- [ ] Touch targets: all buttons ≥ 44px height
+- [ ] Contrast: text on glass cards passes WCAG AA (check with DevTools accessibility)
