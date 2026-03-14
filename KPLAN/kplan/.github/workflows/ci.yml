@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: "20"
+  # Dummy values so Next.js build doesn't crash on missing env vars
+  NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder-anon-key"
+  SUPABASE_SERVICE_ROLE_KEY: "placeholder-service-key"
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Lint
+  # ─────────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Type-check
+  # ─────────────────────────────────────────────────────────────────────────
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx tsc --noEmit
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Tests
+  # ─────────────────────────────────────────────────────────────────────────
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Build
+  # ─────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # SQL Migration validation (check files are properly numbered)
+  # ─────────────────────────────────────────────────────────────────────────
+  migrations:
+    name: Validate Migrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check migration file naming convention
+        run: |
+          echo "Checking migration files..."
+          errors=0
+          for f in sql/migrations/*.sql; do
+            basename=$(basename "$f")
+            if ! [[ "$basename" =~ ^[0-9]{3}_ ]]; then
+              echo "❌ Bad naming: $basename (expected NNN_name.sql)"
+              errors=$((errors + 1))
+            else
+              echo "✅ $basename"
+            fi
+          done
+          if [ "$errors" -gt 0 ]; then
+            echo ""
+            echo "❌ $errors migration file(s) have incorrect naming."
+            echo "   Expected format: NNN_description.sql (e.g. 001_add-users.sql)"
+            exit 1
+          fi
+          echo ""
+          echo "✅ All migration files follow the naming convention."
