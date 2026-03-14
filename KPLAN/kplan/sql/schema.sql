@@ -17,14 +17,18 @@ create table if not exists events (
   updated_at timestamptz not null default now()
 );
 
--- CLIENT ACCESS (token par event)
+-- CLIENT ACCESS (user-based auth per event)
 create table if not exists client_access (
   id uuid primary key default gen_random_uuid(),
   event_id uuid not null references events(id) on delete cascade,
-  client_token text not null unique,
-  expires_at timestamptz,
-  created_at timestamptz not null default now()
+  user_id uuid references auth.users(id) on delete cascade,
+  email text,
+  is_revoked boolean not null default false,
+  invited_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  unique(user_id, event_id)
 );
+create index if not exists client_access_user_id_idx on client_access(user_id);
 
 -- GUESTS (liste officielle)
 create table if not exists guests (
