@@ -115,6 +115,52 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* ─── Kplan Design Tokens ──────────────────────────────────────────────── */
+:root {
+  /* Brand palette */
+  --kplan-gold:      #C9A96E;
+  --kplan-rose:      #E8A0A0;
+  --kplan-sage:      #8FAF8F;
+  --kplan-midnight:  #0A0C1A;
+  --kplan-navy:      #0D1240;
+
+  /* Glass system */
+  --glass-bg:          rgba(255,255,255,0.10);
+  --glass-bg-strong:   rgba(255,255,255,0.18);
+  --glass-border:      rgba(255,255,255,0.18);
+  --glass-border-top:  rgba(255,255,255,0.35);
+  --glass-shadow:      0 8px 32px rgba(0,0,0,0.20), 0 1px 0 rgba(255,255,255,0.10) inset;
+
+  /* Text hierarchy */
+  --text-1: rgba(255,255,255,0.95);
+  --text-2: rgba(255,255,255,0.65);
+  --text-3: rgba(255,255,255,0.40);
+
+  /* Easing */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Border radius */
+  --r-sm:   12px;
+  --r-md:   18px;
+  --r-lg:   24px;
+  --r-xl:   32px;
+  --r-pill: 100px;
+}
+
+/* ─── Tailwind v4 custom color tokens ─────────────────────────────────── */
+/* Extends @theme so Tailwind generates bg-kplan-gold, text-kplan-gold, etc. */
+@theme inline {
+  --color-kplan-gold:     #C9A96E;
+  --color-kplan-rose:     #E8A0A0;
+  --color-kplan-sage:     #8FAF8F;
+  --color-kplan-midnight: #0A0C1A;
+  --color-kplan-navy:     #0D1240;
+
+  /* Font alias: Dancing Script is loaded as --font-handwriting in layout.tsx */
+  --font-dancing: var(--font-handwriting);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -214,4 +260,36 @@
 /* Transitions fluides entre sections */
 .section-transition {
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Liquid Glass Animations ─────────────────────────────────────────── */
+
+/* Ambient orb float */
+@keyframes float1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(60px,40px) scale(1.1)} }
+@keyframes float2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-40px,60px) scale(0.9)} }
+@keyframes float3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(40px,-30px) scale(1.05)} }
+
+/* Shimmer skeleton */
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.skeleton-glass {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.04) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Error shake */
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+.shake { animation: shake 0.4s ease-in-out; }
+
+/* Gold pulse (Jour J badge) */
+@keyframes gold-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(201,169,110,0.5)} 50%{box-shadow:0 0 0 6px rgba(201,169,110,0)} }
+.animate-gold-pulse { animation: gold-pulse 2s ease-in-out infinite; }
+
+/* Confetti */
+@keyframes confetti-fall { 0%{transform:translateY(-100px) rotate(0deg);opacity:1} 100%{transform:translateY(600px) rotate(720deg);opacity:0} }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  .skeleton-glass { animation: none; background: rgba(255,255,255,0.06); }
 }
