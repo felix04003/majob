@@ -9,14 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
-import { Mail, MessageCircle, Send, Loader2, ShieldOff, RefreshCw, QrCode, BarChart3 } from "lucide-react"
+import { Mail, MessageCircle, Loader2, ShieldOff, RefreshCw, QrCode, BarChart3 } from "lucide-react"
 import TasksPanel from "./tasks-panel"
 import InvitationTab from "./invitation-tab"
 import SeatingTab from "./seating-tab"
+import ClientAccountsTab from "./client-accounts-tab"
 
 type EventDetailResp = {
   event: { id: string; title: string; status: string; start_at: string }
-  clientAccess: null | { client_token: string; expires_at: string | null }
   counts: { guests: number; pendingChanges: number }
 }
 
@@ -52,7 +52,6 @@ export default function EventDetail({ eventId }: { eventId: string }) {
   const [guestQuery, setGuestQuery] = useState("")
   const [guestSort, setGuestSort] = useState<"created_desc" | "created_asc" | "name_asc" | "name_desc">("created_desc")
   const [tabError, setTabError] = useState<string | null>(null)
-  const [rotating, setRotating] = useState(false)
   const [sendingToken, setSendingToken] = useState<string | null>(null)
   const [sendingAll, setSendingAll] = useState(false)
   const [generatingPasses, setGeneratingPasses] = useState(false)
@@ -285,22 +284,6 @@ export default function EventDetail({ eventId }: { eventId: string }) {
     setChanges(Array.isArray((json as any)?.changes) ? (json as any).changes : [])
   }
 
-  async function rotateClientAccess() {
-    setRotating(true)
-    setTabError(null)
-    const res = await fetch(`/api/planner/events/${encodeURIComponent(eventId)}/client-access/rotate`, { method: "POST" })
-    const json = await res.json().catch(() => ({}))
-    setRotating(false)
-    if (!res.ok) {
-      setTabError((json as any)?.error ?? `Erreur ${res.status}`)
-      return
-    }
-    // Refresh main card data (clientAccess)
-    const res2 = await fetch(`/api/planner/events/${encodeURIComponent(eventId)}`, { cache: "no-store" })
-    const json2 = await res2.json().catch(() => ({}))
-    if (res2.ok) setData(json2 as any)
-  }
-
   if (loading) {
     return (
       <Card>
@@ -324,9 +307,6 @@ export default function EventDetail({ eventId }: { eventId: string }) {
   }
 
   if (!data) return null
-
-  const clientToken = data.clientAccess?.client_token ?? null
-  const clientPath = clientToken ? `/c/${clientToken}/guests` : null
 
   return (
     <>
@@ -355,13 +335,6 @@ export default function EventDetail({ eventId }: { eventId: string }) {
           <Button asChild>
             <Link href="/requests">Voir demandes</Link>
           </Button>
-          {clientToken ? (
-            <Button asChild>
-              <Link href={`/c/${clientToken}/guests`}>Ouvrir côté client</Link>
-            </Button>
-          ) : (
-            <Button disabled>Client indisponible</Button>
-          )}
         </div>
 
         {tabError ? <div className="text-sm text-red-600">{tabError}</div> : null}
@@ -392,10 +365,6 @@ export default function EventDetail({ eventId }: { eventId: string }) {
               <div className="rounded-md border p-3">
                 <div className="text-xs text-muted-foreground">Demandes pending</div>
                 <div className="text-lg font-semibold">{data.counts.pendingChanges}</div>
-              </div>
-              <div className="rounded-md border p-3">
-                <div className="text-xs text-muted-foreground">Client token</div>
-                <div className="truncate text-sm">{clientToken ? <code>{clientToken}</code> : "—"}</div>
               </div>
             </div>
           </TabsContent>
@@ -727,53 +696,7 @@ export default function EventDetail({ eventId }: { eventId: string }) {
           </TabsContent>
 
           <TabsContent value="client">
-            <div className="flex flex-col gap-2">
-              <div className="text-sm text-muted-foreground">
-                Lien client:{" "}
-                {clientPath ? (
-                  <Link className="underline" href={clientPath}>
-                    {clientPath}
-                  </Link>
-                ) : (
-                  "—"
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!clientToken}
-                  onClick={async () => {
-                    if (!clientToken) return
-                    await navigator.clipboard.writeText(clientToken)
-                    toast.success("clientToken copié")
-                  }}
-                >
-                  Copier le token
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!clientPath}
-                  onClick={async () => {
-                    if (!clientPath) return
-                    const full = `${location.origin}${clientPath}`
-                    await navigator.clipboard.writeText(full)
-                    toast.success("Lien client copié")
-                  }}
-                >
-                  Copier le lien
-                </Button>
-              </div>
-              <div className="flex gap-2">
-                <Button type="button" onClick={rotateClientAccess} disabled={rotating}>
-                  {rotating ? "Génération…" : clientToken ? "Regénérer le token" : "Créer un token"}
-                </Button>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Note: regénérer invalide les anciens tokens (expires_at).
-              </div>
-            </div>
+            <ClientAccountsTab eventId={eventId} />
           </TabsContent>
         </Tabs>
       </CardContent>
