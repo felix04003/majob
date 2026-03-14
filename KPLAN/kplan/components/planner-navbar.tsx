@@ -23,12 +23,12 @@ export default function PlannerNavbar() {
   const isActive = (href: string) => pathname === href
 
   return (
-    <nav className="border-b border-border bg-background">
+    <nav className="sticky top-0 z-50 border-b border-white/8 backdrop-blur-[40px]" style={{ background: "rgba(10,12,26,0.75)" }}>
       <div className="mx-auto max-w-6xl px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center">
-            <span className="text-xl font-bold text-foreground">Kplan</span>
+            <span className="text-xl font-bold" style={{ background: "linear-gradient(135deg, #C9A96E, #ffffff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Kplan</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -39,8 +39,8 @@ export default function PlannerNavbar() {
                 href={link.href}
                 className={`text-sm transition-colors ${
                   isActive(link.href)
-                    ? "font-bold text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "font-medium text-kplan-gold"
+                    : "text-white/55 hover:text-white/90"
                 }`}
               >
                 {link.label}
@@ -110,8 +110,8 @@ export default function PlannerNavbar() {
                 onClick={() => setIsOpen(false)}
                 className={`block py-2 text-sm transition-colors ${
                   isActive(link.href)
-                    ? "font-bold text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "font-medium text-kplan-gold"
+                    : "text-white/55 hover:text-white/90"
                 }`}
               >
                 {link.label}
@@ -122,8 +122,8 @@ export default function PlannerNavbar() {
               onClick={() => setIsOpen(false)}
               className={`flex items-center gap-2 py-2 text-sm transition-colors ${
                 isActive("/notifications")
-                  ? "font-bold text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "font-medium text-kplan-gold"
+                  : "text-white/55 hover:text-white/90"
               }`}
             >
               Notifications
