@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { GlassCard } from "@/components/ui/glass-card"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
@@ -153,12 +154,12 @@ export default function EventsTableEnhanced() {
 
   return (
     <>
-      <Card>
-        <CardHeader>
+      <GlassCard>
+        <div className="pb-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-col gap-1">
-              <CardTitle>Événements</CardTitle>
-              <CardDescription>Gérez tous vos événements (création, modification, suppression).</CardDescription>
+              <h2 className="text-lg font-semibold text-white/95">Événements</h2>
+              <p className="text-sm text-white/45">Gérez tous vos événements (création, modification, suppression).</p>
             </div>
             <div className="flex gap-2">
               <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -240,14 +241,14 @@ export default function EventsTableEnhanced() {
               <BackButton />
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div>
           {loading ? (
-            <div className="text-sm text-muted-foreground">Chargement…</div>
+            <div className="text-sm text-white/45">Chargement…</div>
           ) : error ? (
-            <div className="text-sm text-red-600">{error}</div>
+            <div className="text-sm text-red-400">{error}</div>
           ) : events.length === 0 ? (
-            <div className="text-sm text-muted-foreground">Aucun événement. Créez-en un pour commencer !</div>
+            <div className="text-sm text-white/45">Aucun événement. Créez-en un pour commencer !</div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -273,17 +274,17 @@ export default function EventsTableEnhanced() {
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">{e.venue_name || "—"}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
+                        <StatusBadge
+                          status={
                             e.status === "published"
-                              ? "default"
+                              ? "active"
                               : e.status === "cancelled"
-                              ? "destructive"
-                              : "secondary"
+                              ? "cancelled"
+                              : e.status === "completed"
+                              ? "completed"
+                              : "pending"
                           }
-                        >
-                          {e.status}
-                        </Badge>
+                        />
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-2">
@@ -313,8 +314,8 @@ export default function EventsTableEnhanced() {
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </GlassCard>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-2xl">

@@ -11,9 +11,10 @@ import {
   QrCode,
   ArrowLeft,
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { GlassCard } from "@/components/ui/glass-card"
+import { KplanButton } from "@/components/ui/kplan-button"
 import DayOfChecklist from "./dayof-checklist"
 import { useRealtimeTable } from "@/hooks/use-realtime"
 
@@ -183,7 +184,7 @@ export default function DayOfDashboard({ eventId }: DayOfDashboardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen p-4 md:p-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
@@ -211,10 +212,10 @@ export default function DayOfDashboard({ eventId }: DayOfDashboardProps) {
               <RefreshCw className="w-4 h-4" />
             </Button>
             <Link href="/dayof">
-              <Button variant="outline" size="sm">
+              <KplanButton variant="gold" size="sm">
                 <QrCode className="w-4 h-4 mr-2" />
                 Scanner
-              </Button>
+              </KplanButton>
             </Link>
           </div>
         </div>
@@ -223,185 +224,139 @@ export default function DayOfDashboard({ eventId }: DayOfDashboardProps) {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         {/* Total invités */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">
-              Total invités
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="text-3xl font-bold text-gray-900">
-                {stats.total_guests}
-              </div>
-              <Users className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
+        <GlassCard variant="strong" hover>
+          <p className="text-xs font-medium uppercase tracking-widest text-white/40">Total invités</p>
+          <div className="mt-1 flex items-center justify-between">
+            <div className="text-3xl font-bold text-white/95">{stats.total_guests}</div>
+            <Users className="w-8 h-8 text-white/30" />
+          </div>
+        </GlassCard>
 
         {/* Arrivés */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">
-              Arrivés
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="text-3xl font-bold text-green-600">
-                {stats.arrived}
-              </div>
-              <UserCheck className="w-8 h-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
+        <GlassCard variant="strong" hover>
+          <p className="text-xs font-medium uppercase tracking-widest text-white/40">Arrivés</p>
+          <div className="mt-1 flex items-center justify-between">
+            <div className="text-3xl font-bold text-white/95">{stats.arrived}</div>
+            <UserCheck className="w-8 h-8 text-emerald-400/60" />
+          </div>
+        </GlassCard>
 
         {/* En attente */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">
-              En attente
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="text-3xl font-bold text-amber-600">
-                {stats.pending}
-              </div>
-              <Clock className="w-8 h-8 text-amber-600" />
-            </div>
-          </CardContent>
-        </Card>
+        <GlassCard variant="strong" hover>
+          <p className="text-xs font-medium uppercase tracking-widest text-white/40">En attente</p>
+          <div className="mt-1 flex items-center justify-between">
+            <div className="text-3xl font-bold text-white/95">{stats.pending}</div>
+            <Clock className="w-8 h-8 text-amber-400/60" />
+          </div>
+        </GlassCard>
 
         {/* Taux de présence */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">
-              Taux de présence
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="text-3xl font-bold text-purple-600">
-                {stats.rate}%
-              </div>
-              <TrendingUp className="w-8 h-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
+        <GlassCard variant="strong" hover>
+          <p className="text-xs font-medium uppercase tracking-widest text-white/40">Taux de présence</p>
+          <div className="mt-1 flex items-center justify-between">
+            <div className="text-3xl font-bold text-white/95">{stats.rate}%</div>
+            <TrendingUp className="w-8 h-8 text-kplan-gold/60" />
+          </div>
+        </GlassCard>
       </div>
 
       {/* Arrival Progress Chart */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Progression des arrivées</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="w-full bg-gray-200 rounded-full h-8 overflow-hidden">
-              <div
-                className="bg-gradient-to-r from-green-400 to-green-600 h-full flex items-center justify-center transition-all duration-500"
-                style={{
-                  width: `${stats.rate}%`,
-                }}
-              >
-                {stats.rate > 0 && (
-                  <span className="text-white text-sm font-semibold">
-                    {stats.rate}%
-                  </span>
-                )}
-              </div>
+      <GlassCard variant="strong" className="mb-8">
+        <p className="mb-3 text-xs font-medium uppercase tracking-widest text-white/40">Progression des arrivées</p>
+        <div className="space-y-2">
+          <div className="w-full bg-white/10 rounded-full h-8 overflow-hidden">
+            <div
+              className="bg-gradient-to-r from-emerald-400 to-emerald-600 h-full flex items-center justify-center transition-all duration-500"
+              style={{ width: `${stats.rate}%` }}
+            >
+              {stats.rate > 0 && (
+                <span className="text-white text-sm font-semibold">
+                  {stats.rate}%
+                </span>
+              )}
             </div>
-            <p className="text-xs text-gray-600">
-              {stats.arrived} sur {stats.total_guests} invités arrivés
-            </p>
           </div>
-        </CardContent>
-      </Card>
+          <p className="text-xs text-white/45">
+            {stats.arrived} sur {stats.total_guests} invités arrivés
+          </p>
+        </div>
+      </GlassCard>
 
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Latest Checkins */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Derniers scans</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {checkins.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-8">
-                Aucun scan pour le moment
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {checkins.map((checkin) => (
-                  <div
-                    key={checkin.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-                  >
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">
-                        {checkin.guest_name}
-                      </p>
-                      <p className="text-xs text-gray-600">
-                        {formatTime(checkin.scanned_at)}
-                      </p>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={getResultBadgeColor(checkin.result)}
-                    >
-                      {getResultLabel(checkin.result)}
-                    </Badge>
+        <GlassCard variant="strong">
+          <p className="mb-3 text-xs font-medium uppercase tracking-widest text-white/40">Derniers scans</p>
+          {checkins.length === 0 ? (
+            <p className="text-sm text-white/40 text-center py-8">
+              Aucun scan pour le moment
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {checkins.map((checkin) => (
+                <div
+                  key={checkin.id}
+                  className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
+                >
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-white/90">
+                      {checkin.guest_name}
+                    </p>
+                    <p className="text-xs text-white/45">
+                      {formatTime(checkin.scanned_at)}
+                    </p>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  <Badge
+                    variant="outline"
+                    className={getResultBadgeColor(checkin.result)}
+                  >
+                    {getResultLabel(checkin.result)}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </GlassCard>
 
         {/* Guest List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Liste des invités (RSVP oui)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {guests.filter((g) => g.rsvp_status === "yes").length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-8">
-                Aucun invité avec RSVP oui
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {guests
-                  .filter((g) => g.rsvp_status === "yes")
-                  .map((guest) => (
-                    <div
-                      key={guest.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-                    >
-                      <p className="text-sm font-medium text-gray-900">
-                        {guest.first_name} {guest.last_name}
-                      </p>
-                      {guest.arrived ? (
-                        <div className="flex items-center gap-2">
-                          <UserCheck className="w-4 h-4 text-green-600" />
-                          <span className="text-xs text-green-600 font-medium">
-                            {formatTime(guest.arrived_at || "")}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-gray-400" />
-                          <span className="text-xs text-gray-400">
-                            En attente
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <GlassCard variant="strong">
+          <p className="mb-3 text-xs font-medium uppercase tracking-widest text-white/40">Liste des invités (RSVP oui)</p>
+          {guests.filter((g) => g.rsvp_status === "yes").length === 0 ? (
+            <p className="text-sm text-white/40 text-center py-8">
+              Aucun invité avec RSVP oui
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {guests
+                .filter((g) => g.rsvp_status === "yes")
+                .map((guest) => (
+                  <div
+                    key={guest.id}
+                    className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
+                  >
+                    <p className="text-sm font-medium text-white/90">
+                      {guest.first_name} {guest.last_name}
+                    </p>
+                    {guest.arrived ? (
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="w-4 h-4 text-emerald-400" />
+                        <span className="text-xs text-emerald-400 font-medium">
+                          {formatTime(guest.arrived_at || "")}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-white/30" />
+                        <span className="text-xs text-white/30">
+                          En attente
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
+        </GlassCard>
       </div>
 
       {/* Checklist Jour-J */}
