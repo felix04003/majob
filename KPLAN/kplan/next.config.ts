@@ -10,6 +10,15 @@ const nextConfig: NextConfig = {
     root: rootDir,
   },
   outputFileTracingRoot: rootDir,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.pexels.com",
+        pathname: "/photos/**",
+      },
+    ],
+  },
 };
 
 export default withSentryConfig(nextConfig, {
